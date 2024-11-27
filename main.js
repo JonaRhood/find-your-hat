@@ -1,5 +1,6 @@
 const prompt = require('prompt-sync')({ sigint: true });
 const chalk = require('chalk');
+const term = require('terminal-kit').terminal;
 
 const hat = '^';
 const hole = 'O';
@@ -21,6 +22,7 @@ class Field {
 
     print() {
         console.clear();
+        term.white.bgBlue.underline("##########  FIND THE HAT  ##########\n\n"),
         console.log(
             this.field.map(row => row.map(cell => {
                 if (cell === pathCharacter) {
@@ -30,7 +32,7 @@ class Field {
                 } else {
                     return chalk.blue(cell);
                 }
-            }).join('')).join('\n')
+            }).join('')).join('\n'), "\n"
         );
     }
 
@@ -42,10 +44,10 @@ class Field {
 
         // Cases 
         switch (userMove) {
-            case 'u': newX -= 1; break;
-            case 'd': newX += 1; break;
-            case 'r': newY += 1; break;
-            case 'l': newY -= 1; break;
+            case 'up': newX -= 1; break;
+            case 'down': newX += 1; break;
+            case 'right': newY += 1; break;
+            case 'left': newY -= 1; break;
             default:
                 console.error('Invalid Move! Type: "u" (up), "d" (down), "r" (right) or "l" (left)');
                 return;
@@ -64,6 +66,7 @@ class Field {
             console.log(chalk.red("You fell into a hole! Game Over!"));
             process.exit();
         } else if (newCell === hat) {
+            term.bell();
             console.clear();
             console.log(chalk.green('You found the hat! You win!'))
             process.exit();
@@ -91,7 +94,8 @@ class Field {
         this.turn += 1;
 
         this.print();
-        console.log(chalk.gray("Current Turn:", this.turn));
+        term.white.bgBlue("Current Turn: ", this.turn + "\n");
+        term.gray("Move the arrows to play or press Ctrl + C to exit\n");
     }
 
     generateField(height, width) {
@@ -121,7 +125,8 @@ class Field {
         this.playerPosition = [randomHeightCharacter, randomWidthCharacter];
 
         this.print();
-        console.log(chalk.gray("Current Turn:", this.turn));
+        term.white.bgBlue("Current Turn: ", this.turn + "\n");
+        term.gray("Move the arrows to play or press Ctrl + C to exit\n");
     }
 
     hardMode(userInput) {
@@ -150,8 +155,19 @@ let width = parseInt(widthPrompt);
 
 myField.generateField(height, width);
 
-while (!foundTheHat) {
-    let movePrompt = prompt('Make a move (u, d ,r, l): ');
+// Listen for key presses using terminal-kit
+term.grabInput({ mouse: 'off', keys: 'flow' }); 
 
-    myField.move(movePrompt);
-}
+term.on('key', function(name, matches, data) {
+    if (name === 'UP' || name === 'DOWN' || name === 'LEFT' || name === 'RIGHT') {
+        myField.move(name.toLowerCase()); 
+    }
+});
+
+term.on('key', function(name, matches, data) {
+    if (name === 'CTRL_C') {
+        console.clear();
+        console.log(chalk.red('Game Over: You pressed Ctrl + C.'));
+        process.exit();
+    }
+});
